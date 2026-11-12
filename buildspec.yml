@@ -1,0 +1,44 @@
+version: 0.2
+
+env:
+  variables:
+    NODE_ENV: "test"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo "Node $(node -v) - npm $(npm -v)"
+  pre_build:
+    commands:
+      - echo "Instalando dependencias..."
+      - npm ci --no-audit --no-fund
+  build:
+    commands:
+      - echo "Ejecutando pruebas unitarias..."
+      - mkdir -p reports
+      - npm run test:ci
+  post_build:
+    commands:
+      - echo "Pruebas finalizadas. Generando artefacto de despliegue."
+
+reports:
+  pruebas-unitarias:
+    files:
+      - "reports/junit.xml"
+    file-format: JUNITXML
+
+artifacts:
+  files:
+    - src/**/*
+    - public/**/*
+    - sql/**/*
+    - package.json
+    - package-lock.json
+    - Procfile
+
+cache:
+  paths:
+    - "node_modules/**/*"
+    - "/root/.npm/**/*"
