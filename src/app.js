@@ -12,7 +12,7 @@ function crearApp({ repo }) {
   app.use(cors());
   app.use(express.json({ limit: '100kb' }));
 
-  // Verificación simple del servidor
+  // Verificación del servidor
   app.get('/health', (req, res) => res.json({ ok: true }));
 
   // Verificación del servidor y la base de datos
@@ -36,7 +36,7 @@ function crearApp({ repo }) {
     res.status(201).location(`/api/pedidos/${pedido.id}`).json(pedido);
   });
 
-  // Listar pedidos (filtro por estado, orden y paginación)
+  // Listar pedidos
   app.get('/api/pedidos', async (req, res) => {
     const { errores, filtros } = validarFiltros(req.query);
     if (errores.length) return res.status(400).json({ error: 'Parámetros inválidos', detalles: errores });
