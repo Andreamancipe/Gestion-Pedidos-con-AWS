@@ -7,10 +7,6 @@ const { validarPedido, validarCambioEstado, validarFiltros } = require('./valida
 
 const ID_RE = /^[1-9]\d*$/;
 
-/**
- * Crea la aplicación Express. Recibe el repositorio como dependencia,
- * así las pruebas unitarias pueden usar uno en memoria sin base de datos.
- */
 function crearApp({ repo }) {
   const app = express();
   app.use(cors());
@@ -31,7 +27,6 @@ function crearApp({ repo }) {
   });
 
   app.use(express.static(path.join(__dirname, '..', 'public')));
-
 
   // Crear pedido
   app.post('/api/pedidos', async (req, res) => {
