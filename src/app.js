@@ -7,12 +7,17 @@ const { validarPedido, validarCambioEstado, validarFiltros } = require('./valida
 
 const ID_RE = /^[1-9]\d*$/;
 
+/**
+ * Crea la aplicación Express. Recibe el repositorio como dependencia,
+ * así las pruebas unitarias pueden usar uno en memoria sin base de datos.
+ */
 function crearApp({ repo }) {
   const app = express();
   app.use(cors());
   app.use(express.json({ limit: '100kb' }));
-  app.use(express.static(path.join(__dirname, '..', 'public')));
 
+  // Verificación simple del servidor
+  app.get('/health', (req, res) => res.json({ ok: true }));
 
   // Verificación del servidor y la base de datos
   app.get('/api/health', async (req, res) => {
@@ -24,6 +29,9 @@ function crearApp({ repo }) {
       res.status(503).json({ ok: false, database: false });
     }
   });
+
+  app.use(express.static(path.join(__dirname, '..', 'public')));
+
 
   // Crear pedido
   app.post('/api/pedidos', async (req, res) => {
