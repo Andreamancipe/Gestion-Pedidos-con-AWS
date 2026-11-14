@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { crearApp } = require('../src/app');
 
+/** Repositorio en memoria: permite probar la API sin base de datos. */
 function repoEnMemoria() {
   const pedidos = [];
   let siguiente = 1;
@@ -37,7 +38,11 @@ function repoEnMemoria() {
 
 async function conServidor(repo, fn) {
   const app = crearApp({ repo });
-  const server = await new Promise((resolve) => { const s = app.listen(0, () => resolve(s)); });
+  // Se enlaza explícitamente a 127.0.0.1 (IPv4) para evitar ambigüedades de red en entornos de CI
+  const server = await new Promise((resolve, reject) => {
+    const s = app.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve(s)));
+    s.once('error', reject);
+  });
   const base = `http://127.0.0.1:${server.address().port}`;
   const http = async (ruta, opciones = {}) => {
     const res = await fetch(base + ruta, {
@@ -45,9 +50,10 @@ async function conServidor(repo, fn) {
       headers: opciones.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
       body: opciones.raw !== undefined ? opciones.raw : opciones.body !== undefined ? JSON.stringify(opciones.body) : undefined
     });
+    const texto = await res.text();
     let json = null;
-    try { json = await res.json(); } catch { /* sin cuerpo */ }
-    return { status: res.status, json, headers: res.headers };
+    try { json = JSON.parse(texto); } catch { /* sin cuerpo JSON */ }
+    return { status: res.status, json, texto, headers: res.headers };
   };
   try { await fn(http, repo); } finally { await new Promise((r) => server.close(r)); }
 }
@@ -61,7 +67,7 @@ const pedidoNuevo = () => ({
 test('GET /health responde ok', async () => {
   await conServidor(repoEnMemoria(), async (http) => {
     const r = await http('/health');
-    assert.equal(r.status, 200);
+    assert.equal(r.status, 200, `respuesta inesperada: ${r.status} ${r.texto.slice(0, 200)}`);
     assert.deepEqual(r.json, { ok: true });
   });
 });
