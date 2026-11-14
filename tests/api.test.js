@@ -36,6 +36,11 @@ function repoEnMemoria() {
   };
 }
 
+function diagnostico(app) {
+  const rutas = ((app.router && app.router.stack) || []).map((l) => (l.route ? `${Object.keys(l.route.methods).join(',').toUpperCase()} ${l.route.path}` : l.name));
+  return `node=${process.version} express=${require('express/package.json').version} NODE_ENV=${process.env.NODE_ENV} rutas=[${rutas.join(' | ')}]`;
+}
+
 async function conServidor(repo, fn) {
   const app = crearApp({ repo });
   // Se enlaza explícitamente a 127.0.0.1 (IPv4) para evitar ambigüedades de red en entornos de CI
@@ -53,7 +58,7 @@ async function conServidor(repo, fn) {
     const texto = await res.text();
     let json = null;
     try { json = JSON.parse(texto); } catch { /* sin cuerpo JSON */ }
-    return { status: res.status, json, texto, headers: res.headers };
+    return { status: res.status, json, texto, headers: res.headers, diag: diagnostico(app) };
   };
   try { await fn(http, repo); } finally { await new Promise((r) => server.close(r)); }
 }
@@ -67,7 +72,7 @@ const pedidoNuevo = () => ({
 test('GET /health responde ok', async () => {
   await conServidor(repoEnMemoria(), async (http) => {
     const r = await http('/health');
-    assert.equal(r.status, 200, `respuesta inesperada: ${r.status} ${r.texto.slice(0, 200)}`);
+    assert.equal(r.status, 200, `respuesta inesperada: ${r.status} ${r.texto.slice(0, 120)} DIAG: ${r.diag}`);
     assert.deepEqual(r.json, { ok: true });
   });
 });
